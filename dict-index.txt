@@ -1,0 +1,1 @@
+st_ino:786737	dict:0xa6b990	dict.buffer:0xa74830	st_size:26251

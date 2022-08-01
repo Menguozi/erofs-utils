@@ -1,0 +1,1 @@
+st_ino:786737	i_srcpath:/home/anuser/erofs-utils/test/Makefile	st_size:26251

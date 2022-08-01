@@ -23,6 +23,7 @@
 #include "erofs/block_list.h"
 #include "erofs/compress_hints.h"
 #include "erofs/blobchunk.h"
+#include "erofs/dict.h"
 
 #ifdef HAVE_LIBUUID
 #include <uuid.h>
@@ -532,6 +533,8 @@ int main(int argc, char **argv)
 	erofs_blk_t nblocks;
 	struct timeval t;
 	char uuid_str[37] = "not available";
+	struct small_file *pos;
+	FILE *fd;
 
 	erofs_init_configure();
 	fprintf(stderr, "%s %s\n", basename(argv[0]), cfg.c_version);
@@ -641,6 +644,18 @@ int main(int argc, char **argv)
 			  erofs_strerror(err));
 		goto exit;
 	}
+	fd = fopen("./small_file.txt", "w");
+	list_for_each_entry(pos, &small_file_list.list, list) {
+		fprintf(fd, "st_ino:%lu\ti_srcpath:%s\tst_size:%lu\n", pos->st_ino, pos->i_srcpath, pos->st_size);
+	}
+	fclose(fd);
+
+	err = erofs_build_shared_dicts();
+	if (err) {
+		erofs_err("Failed to build shared dicts: %s",
+			  erofs_strerror(err));
+		goto exit;
+	}
 
 	root_inode = erofs_mkfs_build_tree_from_path(NULL, cfg.c_src_path);
 	if (IS_ERR(root_inode)) {
@@ -681,6 +696,16 @@ exit:
 	if (cfg.c_chunkbits)
 		erofs_blob_exit();
 	erofs_exit_configure();
+
+	fd = fopen("./dict-index.txt", "w");
+	list_for_each_entry(pos, &small_file_list.list, list) {
+		fprintf(fd, "st_ino:%lu\tdict:%p\tdict.buffer:%p\tst_size:%lu\n", pos->st_ino, pos->dict, pos->dict->buffer, pos->st_size);
+		// fprintf(fd, "st_ino:%lu\tdict:%p\tst_size:%lu\n", pos->st_ino, pos->dict, pos->st_size);
+	}
+	fclose(fd);
+
+	if(small_file_cnt)
+		erofs_free_shared_dicts();
 
 	if (err) {
 		erofs_err("\tCould not format the device : %s\n",

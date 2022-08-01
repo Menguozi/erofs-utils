@@ -17,6 +17,7 @@
 #include "erofs/xattr.h"
 #include "erofs/cache.h"
 #include "erofs/io.h"
+#include "erofs/dict.h"
 
 #define EA_HASHTABLE_BITS 16
 
@@ -479,6 +480,7 @@ static int erofs_count_all_xattrs_from_path(const char *path)
 	while (1) {
 		struct dirent *dp;
 		char buf[PATH_MAX];
+		struct small_file *sf_p;
 
 		/*
 		 * set errno to 0 before calling readdir() in order to
@@ -505,6 +507,17 @@ static int erofs_count_all_xattrs_from_path(const char *path)
 		if (ret) {
 			ret = -errno;
 			goto fail;
+		}
+
+		if (S_ISREG(st.st_mode) && st.st_size < blknr_to_addr(cfg.c_dictsegblks))
+		{
+			sf_p = (struct small_file *)malloc(sizeof(struct small_file));
+			sf_p->st_ino = st.st_ino;
+			sf_p->i_srcpath = (char *)malloc(PATH_MAX);
+			memcpy(sf_p->i_srcpath, buf, sizeof(buf));
+			sf_p->st_size = st.st_size;
+			list_add_tail(&sf_p->list, &small_file_list.list);
+			small_file_cnt++;
 		}
 
 		ret = read_xattrs_from_file(buf, st.st_mode, NULL);
@@ -580,6 +593,8 @@ int erofs_build_shared_xattrs_from_path(const char *path)
 		DBG_BUGON(1);
 		return -EINVAL;
 	}
+
+	init_list_head(&small_file_list.list);
 
 	ret = erofs_count_all_xattrs_from_path(path);
 	if (ret)

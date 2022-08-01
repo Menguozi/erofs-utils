@@ -193,7 +193,7 @@ static int vle_compress_one(struct erofs_inode *inode,
 		}
 
 		count = min(len, cfg.c_max_decompressed_extent_bytes);
-
+		// has_dicts = false;
 		if (has_dicts) {
 			/* 1-byte for DICTIONARY ID */
 			ret = erofs_compress_destsize(h,
@@ -604,7 +604,7 @@ restart:
 
 	close(fd);
 
-	if (dictsegs)
+	if (dictsegs>1)
 		erofsdict_free(ctx.dict, dictsegs);
 
 	DBG_BUGON(!compressed_blocks);
