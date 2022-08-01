@@ -584,11 +584,11 @@ restart:
 
 	compressed_blocks = ctx.blkaddr - blkaddr;
 
-	if (compressed_blocks + dictblks >= BLK_ROUND_UP(inode->i_size)) {
+	if ((inode->z_advise & Z_EROFS_ADVISE_WITH_RNGDICTS) && compressed_blocks + dictblks >= BLK_ROUND_UP(inode->i_size)) {
 		erofsdict_free(ctx.dict, dictsegs);
 		inode->z_advise &= ~Z_EROFS_ADVISE_WITH_RNGDICTS;
 		erofs_bdrop(bh, true);		/* revoke buffer */
-		erofs_bdrop(bhdic, true);	/* revoke dictionary buffer */
+		// erofs_bdrop(bhdic, true);	/* revoke dictionary buffer */
 		lseek(fd, 0, SEEK_SET);
 		dictsegs = 0;
 		goto restart;
