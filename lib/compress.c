@@ -193,7 +193,6 @@ static int vle_compress_one(struct erofs_inode *inode,
 		}
 
 		count = min(len, cfg.c_max_decompressed_extent_bytes);
-		// has_dicts = false;
 		if (has_dicts) {
 			/* 1-byte for DICTIONARY ID */
 			ret = erofs_compress_destsize(h,
@@ -534,14 +533,14 @@ int erofs_write_compressed_file(struct erofs_inode *inode)
 				erofs_blknr(1 << inode->z_dictseglog), &bhdic);
 
 		if (dictsegs) {
-			inode->z_advise |= Z_EROFS_ADVISE_WITH_RNGDICTS;
+			// inode->z_advise |= Z_EROFS_ADVISE_WITH_RNGDICTS;
 			
 			dictblks = erofs_blknr(erofs_btell(bhdic, true) -
 				   	       erofs_btell(bhdic, false));
 		}
 	}
 
-restart:
+// restart: 
 	/* allocate main data buffer */
 	bh = erofs_balloc(DATA, 0, 0, 0);
 	if (IS_ERR(bh)) {
@@ -584,15 +583,15 @@ restart:
 
 	compressed_blocks = ctx.blkaddr - blkaddr;
 
-	if ((inode->z_advise & Z_EROFS_ADVISE_WITH_RNGDICTS) && compressed_blocks + dictblks >= BLK_ROUND_UP(inode->i_size)) {
-		erofsdict_free(ctx.dict, dictsegs);
-		inode->z_advise &= ~Z_EROFS_ADVISE_WITH_RNGDICTS;
-		erofs_bdrop(bh, true);		/* revoke buffer */
-		// erofs_bdrop(bhdic, true);	/* revoke dictionary buffer */
-		lseek(fd, 0, SEEK_SET);
-		dictsegs = 0;
-		goto restart;
-	}
+	// if ((inode->z_advise & Z_EROFS_ADVISE_WITH_RNGDICTS) && compressed_blocks >= BLK_ROUND_UP(inode->i_size)) {
+	// 	erofsdict_free(ctx.dict, dictsegs);
+	// 	inode->z_advise &= ~Z_EROFS_ADVISE_WITH_RNGDICTS;
+	// 	erofs_bdrop(bh, true);		/* revoke buffer */
+	// 	// erofs_bdrop(bhdic, true);	/* revoke dictionary buffer */
+	// 	lseek(fd, 0, SEEK_SET);
+	// 	dictsegs = 0;
+	// 	goto restart;
+	// }
 
 	/* fall back to no compression mode */
 	if (compressed_blocks >= BLK_ROUND_UP(inode->i_size)) {

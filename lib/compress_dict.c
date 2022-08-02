@@ -23,6 +23,7 @@ unsigned int erofsdict_generate(struct erofs_inode *inode,
 	struct erofs_buffer_head *bh;
 	size_t insize;
 	unsigned int i;
+	erofs_blk_t dictindex[segs];
 
 	samplebuffer = (u8 *)malloc(segmentsize);
 	if (!samplebuffer)
@@ -49,16 +50,28 @@ unsigned int erofsdict_generate(struct erofs_inode *inode,
 
 	erofs_dbg("Generating dictionary segments for %s", inode->i_srcpath);
 
-	if(S_ISREG(inode->i_mode) && (inode->i_size < segmentsize))
+	if (S_ISREG(inode->i_mode) && (inode->i_size < segmentsize))
 	{
 		struct small_file *pos;
+		erofs_blk_t blkaddr;
+		int ret;
 
 		list_for_each_entry(pos, &small_file_list.list, list)
 		{
-			if(inode->i_ino[1]==pos->st_ino)
+			if (inode->i_ino[1] == pos->st_ino)
 			{
-				dict=pos->dict;
-				dict->blkaddr=erofs_blknr(erofs_btell(bh, true));
+				dict = pos->dict;
+				if (!dict->blkaddr)
+				{
+					blkaddr = erofs_blknr(erofs_btell(bh, true));
+					ret = dev_write(dict->buffer, blknr_to_addr(blkaddr),
+									dict->dictsize);
+
+					ret = erofs_bh_balloon(bh, dict->dictsize);
+					DBG_BUGON(ret != EROFS_BLKSIZ);
+					dict->blkaddr = blkaddr;
+				}
+				dictindex[0]=dict->blkaddr;
 				break;
 			}
 		}
@@ -109,8 +122,14 @@ unsigned int erofsdict_generate(struct erofs_inode *inode,
 		dict->blkaddr = blkaddr;
 		erofs_dbg("Generated %lu bytes for dictionary segment %u @ blkaddr %u",
 				  dictsize | 0UL, i, blkaddr);
+		dictindex[i]=dict->blkaddr;
 	}
 exit:
+	for(int j=0;j<i;j++)
+	{
+		erofs_dbg("dictindex[%d]: %d", j, dictindex[j]);
+	}
+
 	lseek(fd, 0, SEEK_SET);
 	free(samplebuffer);
 	*dictp = dict;
@@ -135,18 +154,18 @@ int erofs_build_shared_dicts()
 		return 0;
 
 	insize = 0;
-
 	list_for_each_entry(pos, &small_file_list.list, list)
 	{
 		if (insize == 0)
 		{
 			dict = (struct erofsdict_item *)malloc(sizeof(struct erofsdict_item));
-			dict->link = 0;
 			if (!dict)
 			{
 				free(samplebuffer);
 				return 0;
 			}
+			dict->link = 0;
+			dict->blkaddr = 0;
 			DBG_BUGON(dict->buffer);
 			dict->buffer = malloc(cfg.c_dictcapacity);
 		}
@@ -208,7 +227,7 @@ void erofs_save_shared_dicts()
 	struct small_file *pos;
 	int fd;
 
-	fd = open("./dict_buffer.txt", O_APPEND);
+	fd = open("./dict-buffer", O_APPEND);
 	list_for_each_entry(pos, &small_file_list.list, list)
 	{
 		write(fd, pos->dict->buffer, blknr_to_addr(pos->dict->dictsize));

@@ -699,7 +699,8 @@ exit:
 
 	fd = fopen("./dict-index.txt", "w");
 	list_for_each_entry(pos, &small_file_list.list, list) {
-		fprintf(fd, "st_ino:%lu\tdict:%p\tdict.buffer:%p\tst_size:%lu\n", pos->st_ino, pos->dict, pos->dict->buffer, pos->st_size);
+		fprintf(fd, "st_ino:%lu\tdict:%p\tdict.buffer:%p\tdict.blkaddr:%u\tst_size:%lu\n", 
+		pos->st_ino, pos->dict, pos->dict->buffer, pos->dict->blkaddr, pos->st_size);
 		// fprintf(fd, "st_ino:%lu\tdict:%p\tst_size:%lu\n", pos->st_ino, pos->dict, pos->st_size);
 	}
 	fclose(fd);
