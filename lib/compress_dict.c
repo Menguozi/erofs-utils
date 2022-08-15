@@ -23,7 +23,6 @@ unsigned int erofsdict_generate(struct erofs_inode *inode,
 	struct erofs_buffer_head *bh;
 	size_t insize;
 	unsigned int i;
-	erofs_blk_t dictindex[segs];
 
 	samplebuffer = (u8 *)malloc(segmentsize);
 	if (!samplebuffer)
@@ -71,7 +70,6 @@ unsigned int erofsdict_generate(struct erofs_inode *inode,
 					DBG_BUGON(ret != EROFS_BLKSIZ);
 					dict->blkaddr = blkaddr;
 				}
-				dictindex[0]=dict->blkaddr;
 				break;
 			}
 		}
@@ -119,17 +117,11 @@ unsigned int erofsdict_generate(struct erofs_inode *inode,
 		ret = erofs_bh_balloon(bh, dict[i].dictsize);
 		DBG_BUGON(ret != EROFS_BLKSIZ);
 
-		dict->blkaddr = blkaddr;
+		dict[i].blkaddr = blkaddr;
 		erofs_dbg("Generated %lu bytes for dictionary segment %u @ blkaddr %u",
 				  dictsize | 0UL, i, blkaddr);
-		dictindex[i]=dict->blkaddr;
 	}
 exit:
-	for(int j=0;j<i;j++)
-	{
-		erofs_dbg("dictindex[%d]: %d", j, dictindex[j]);
-	}
-
 	lseek(fd, 0, SEEK_SET);
 	free(samplebuffer);
 	*dictp = dict;

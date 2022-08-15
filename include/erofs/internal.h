@@ -158,6 +158,7 @@ struct erofs_inode {
 	unsigned int extent_isize;
 
 	erofs_nid_t nid;
+	erofs_blk_t dictblkaddr;
 	struct erofs_buffer_head *bh;
 	struct erofs_buffer_head *bh_inline, *bh_data;
 

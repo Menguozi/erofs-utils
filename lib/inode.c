@@ -434,6 +434,8 @@ static bool erofs_bh_flush_write_inode(struct erofs_buffer_head *bh)
 
 		u.dic.i_uid = cpu_to_le16((u16)inode->i_uid);
 		u.dic.i_gid = cpu_to_le16((u16)inode->i_gid);
+		u.dic.dictblkaddr = cpu_to_le32(inode->dictblkaddr);
+		erofs_dbg("%s erofs_inode_compact u.dic.dictblkaddr:%u", __func__, u.dic.dictblkaddr);
 
 		switch (inode->i_mode & S_IFMT) {
 		case S_IFCHR:
@@ -471,6 +473,8 @@ static bool erofs_bh_flush_write_inode(struct erofs_buffer_head *bh)
 
 		u.die.i_ctime = cpu_to_le64(inode->i_ctime);
 		u.die.i_ctime_nsec = cpu_to_le32(inode->i_ctime_nsec);
+		u.die.dictblkaddr = cpu_to_le32(inode->dictblkaddr);
+		erofs_dbg("%s erofs_inode_extended u.die.dictblkaddr:%u", __func__, u.die.dictblkaddr);
 
 		switch (inode->i_mode & S_IFMT) {
 		case S_IFCHR:

@@ -46,6 +46,8 @@ struct erofs_super_block {
 	__le32 blocks;          /* used for statfs */
 	__le32 meta_blkaddr;	/* start block address of metadata area */
 	__le32 xattr_blkaddr;	/* start block address of shared xattr area */
+	__le32 dictsegblks;
+	__le32 dictcapacity;
 	__u8 uuid[16];          /* 128-bit uuid for volume */
 	__u8 volume_name[16];   /* volume name */
 	__le32 feature_incompat;
@@ -55,7 +57,9 @@ struct erofs_super_block {
 		/* customized sliding window size instead of 64k by default */
 		__le16 lz4_max_distance;
 	} __packed u1;
-	__u8 reserved2[42];
+	__le16 extra_devices;	/* # of devices besides the primary device */
+	__le16 devt_slotoff;	/* startoff = devt_slotoff * devt_slotsize */
+	__u8 reserved2[30];
 };
 
 /*
@@ -134,7 +138,7 @@ struct erofs_inode_compact {
 	__le32 i_ino;           /* only used for 32-bit stat compatibility */
 	__le16 i_uid;
 	__le16 i_gid;
-	__le32 i_reserved2;
+	__le32 dictblkaddr;
 };
 
 /* 32 bytes on-disk inode */
@@ -171,7 +175,8 @@ struct erofs_inode_extended {
 	__le64 i_ctime;
 	__le32 i_ctime_nsec;
 	__le32 i_nlink;
-	__u8   i_reserved2[16];
+	__le32 dictblkaddr;
+	__u8   i_reserved2[12];
 };
 
 #define EROFS_MAX_SHARED_XATTRS         (128)
@@ -391,7 +396,7 @@ static inline void erofs_check_ondisk_layout_definitions(void)
 	BUILD_BUG_ON(sizeof(struct erofs_xattr_entry) != 4);
 	BUILD_BUG_ON(sizeof(struct erofs_inode_chunk_info) != 4);
 	BUILD_BUG_ON(sizeof(struct erofs_inode_chunk_index) != 8);
-	BUILD_BUG_ON(sizeof(struct z_erofs_map_header) != 8);
+	BUILD_BUG_ON(sizeof(struct z_erofs_map_header) != 12);
 	BUILD_BUG_ON(sizeof(struct z_erofs_vle_decompressed_index) != 8);
 	BUILD_BUG_ON(sizeof(struct erofs_dirent) != 12);
 	/* keep in sync between 2 index structures for better extendibility */

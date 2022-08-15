@@ -397,6 +397,8 @@ int erofs_mkfs_update_super_block(struct erofs_buffer_head *bh,
 		.feature_incompat = cpu_to_le32(sbi.feature_incompat),
 		.feature_compat = cpu_to_le32(sbi.feature_compat &
 					      ~EROFS_FEATURE_COMPAT_SB_CHKSUM),
+		.dictsegblks = cpu_to_le32(cfg.c_dictsegblks),
+		.dictcapacity = cpu_to_le32(cfg.c_dictcapacity),
 	};
 	const unsigned int sb_blksize =
 		round_up(EROFS_SUPER_END, EROFS_BLKSIZ);
@@ -419,6 +421,9 @@ int erofs_mkfs_update_super_block(struct erofs_buffer_head *bh,
 		return -ENOMEM;
 	}
 	memcpy(buf + EROFS_SUPER_OFFSET, &sb, sizeof(sb));
+
+	erofs_dbg("sb.dictsegblks: %u", sb.dictsegblks);
+	erofs_dbg("sb.dictcapacity: %u", sb.dictcapacity);
 
 	bh->fsprivate = buf;
 	bh->op = &erofs_buf_write_bhops;
